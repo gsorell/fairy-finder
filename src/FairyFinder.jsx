@@ -1394,6 +1394,7 @@ function drawScene(ctx, level, game, frame) {
     });
 
     drawText(ctx, "← → to choose  •  SPACE to start", GAME_W / 2, 478, 20, "#86efac", "center");
+    drawText(ctx, "ESC: Back to Game Select", GAME_W / 2, 508, 16, "#475569", "center");
   }
 
   if (game.mode === "complete") {
@@ -1445,11 +1446,13 @@ function makeGame(levelIndex = 0, mode = "title", selectedCharacter) {
   };
 }
 
-export default function FairyFinder() {
+export default function FairyFinder({ onBack }) {
   const canvasRef = useRef(null);
   const keys = useRef({});
   const gameRef = useRef(makeGame());
   const [muted, setMutedUI] = useState(isMuted());
+  const onBackRef = useRef(onBack);
+  useEffect(() => { onBackRef.current = onBack; }, [onBack]);
 
   const onMuteToggle = () => {
     const v = toggleMute();
@@ -1464,6 +1467,12 @@ export default function FairyFinder() {
       if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) e.preventDefault();
       if (e.repeat) return;
       primeAudio();
+      if (key === "escape") {
+        if (gameRef.current.mode === "title") {
+          onBackRef.current?.();
+          return;
+        }
+      }
       if (key === "m") {
         const v = toggleMute();
         setMutedUI(v);
