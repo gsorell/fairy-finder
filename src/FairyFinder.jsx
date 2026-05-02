@@ -15,6 +15,7 @@ import {
   stopMusic,
   restartMusicIfMuted,
 } from "./audio";
+import { TouchControls, BackButton } from "./TouchControls.jsx";
 
 // Fairy Finder: first playable version
 // Controls: Arrow keys / A-D to move, Space/W/Up to jump, R to restart
@@ -1853,13 +1854,16 @@ export default function FairyFinder({ onBack }) {
           <p className="text-slate-300">A tiny playable side-scrolling ohana quest prototype.</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <button
-            type="button"
-            onClick={onMuteToggle}
-            className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-xs text-slate-200 transition"
-          >
-            Sound: {muted ? "OFF" : "ON"} (M)
-          </button>
+          <div className="flex gap-2">
+            <BackButton onBack={onBack} />
+            <button
+              type="button"
+              onClick={onMuteToggle}
+              className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-xs text-slate-200 transition"
+            >
+              Sound: {muted ? "OFF" : "ON"} (M)
+            </button>
+          </div>
           <div className="hidden md:block text-right text-sm text-slate-300">
             Move: ← → or A/D<br />Jump: Space/W/↑<br />Restart: R
           </div>
@@ -1868,6 +1872,16 @@ export default function FairyFinder({ onBack }) {
       <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-black">
         <canvas ref={canvasRef} width={GAME_W} height={GAME_H} className="w-full max-w-[960px] aspect-video block" />
       </div>
+      <TouchControls
+        keysRef={keys}
+        jumpKey=" "
+        showRestart
+        onPress={primeAudio}
+        onRestart={() => {
+          keys.current["r"] = true;
+          setTimeout(() => { keys.current["r"] = false; }, 50);
+        }}
+      />
       <div className="max-w-[960px] w-full rounded-2xl bg-white/10 border border-white/10 p-4 text-sm text-slate-200">
         <b>Prototype notes:</b> first version — three levels, collectibles, moving bugs you can bonk by jumping on them, fairy goals, restart, kid-friendly keyboard controls. See PLAN.md for the upgrade roadmap.
       </div>

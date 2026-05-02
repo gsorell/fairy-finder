@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { isMuted, primeAudio, sfxApex, sfxBonk, sfxHurt, sfxJump, sfxLand, sfxMenuMove, toggleMute } from "./audioWireRunner";
+import { TouchControls, BackButton } from "./TouchControls.jsx";
 
 // Wire Runner — first playable version
 // Side-scrolling endless runner. Jump from wire to wire.
@@ -1404,8 +1405,11 @@ export default function WireRunner({ onBack }) {
           <h1 className="text-3xl md:text-5xl font-black tracking-tight text-amber-300">Wire Runner</h1>
           <p className="text-slate-300">A girl runs the telephone lines. Time the apex.</p>
         </div>
-        <div className="hidden md:block text-right text-sm text-slate-300">
-          Jump: Space / W / ↑<br />Hit pole top for boost
+        <div className="flex flex-col items-end gap-2">
+          <BackButton onBack={onBack} />
+          <div className="hidden md:block text-right text-sm text-slate-300">
+            Jump: Space / W / ↑<br />Hit pole top for boost
+          </div>
         </div>
       </div>
       <div className="rounded-2xl overflow-hidden shadow-2xl border border-white/15 bg-black">
@@ -1416,6 +1420,7 @@ export default function WireRunner({ onBack }) {
           className="w-full max-w-[960px] aspect-video block"
         />
       </div>
+      <TouchControls keysRef={keys} jumpKey=" " onPress={primeAudio} />
       <div className="max-w-[960px] w-full rounded-2xl bg-white/10 border border-white/10 p-4 text-sm text-slate-200">
         <b>Prototype notes:</b> first version — endless runner along telephone lines. Tap jump
         right at a pole top for a big apex boost (Excitebike-style). See PLAN.md for the roadmap.
