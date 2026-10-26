@@ -298,6 +298,50 @@ export default function GameSelect({ onSelect }) {
             Fight →
           </div>
         </button>
+
+        {/* Punch Pop card */}
+        <button
+          onClick={() => onSelect("punch-pop")}
+          className="group relative flex flex-col items-center gap-4 rounded-2xl px-10 py-9 cursor-pointer transition-all duration-200"
+          style={{
+            background: "linear-gradient(135deg, #1b6fd8 0%, #d8323a 100%)",
+            border: "2px solid #ffd23f55",
+            boxShadow: "0 4px 32px #ffd23f20",
+            outline: "none",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 0 3px #ffd23f, 0 4px 40px #ffd23f60")}
+          onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 4px 32px #ffd23f20")}
+        >
+          {/* Mini game preview — balloons over two lanes, a glove in each */}
+          <div className="flex items-end rounded-xl overflow-hidden"
+            style={{ width: 200, height: 128, background: "linear-gradient(180deg, #8fd3ff 0%, #d7f1ff 70%, #fff3d6 100%)", position: "relative" }}>
+            <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "50%", background: "linear-gradient(180deg, transparent, #3bb4ff33)" }} />
+            <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "50%", background: "linear-gradient(180deg, transparent, #ff5a5f33)" }} />
+            <svg style={{ position: "absolute", inset: 0 }} width="200" height="128">
+              {[[46, 34, "#3bb4ff"], [70, 70, "#7c6cff"], [134, 24, "#ff5a5f"], [156, 62, "#ff9f1c"]].map(([x, y, c], i) => (
+                <g key={i}>
+                  <path d={`M${x},${y + 13} q-4,8 2,16`} stroke="#3c3c50" strokeWidth="1" fill="none" opacity="0.6" />
+                  <ellipse cx={x} cy={y} rx="10" ry="13" fill={c} />
+                  <ellipse cx={x - 3} cy={y - 5} rx="2.5" ry="4" fill="#ffffff77" />
+                </g>
+              ))}
+            </svg>
+            {/* popped balloon confetti */}
+            <div style={{ position: "absolute", left: 92, top: 40, fontSize: 18 }}>💥</div>
+            <div style={{ position: "absolute", left: 24, bottom: 4, fontSize: 22, lineHeight: 1 }}>🥊</div>
+            <div style={{ position: "absolute", right: 24, bottom: 4, fontSize: 22, lineHeight: 1, transform: "scaleX(-1)" }}>🥊</div>
+          </div>
+
+          <div className="text-center">
+            <div className="text-2xl font-bold" style={{ color: "#fff7d6" }}>Punch Pop</div>
+            <div className="text-sm mt-1" style={{ color: "#ffd23f" }}>Joy-Con punching • family party</div>
+          </div>
+
+          <div className="text-xs px-4 py-1.5 rounded-full font-semibold transition-all"
+            style={{ background: "#ffd23f", color: "#1b2440" }}>
+            Punch →
+          </div>
+        </button>
       </div>
 
       <p className="mt-12 text-sm" style={{ color: "#334155" }}>
