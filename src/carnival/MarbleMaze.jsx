@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { pads, rumbleHum, rumblePattern, rumbleStop } from '../joycon/hid.js'
 import { createMotion, feedMotion, levelNow, tilt, norm, dot } from '../joycon/motion.js'
-import { LEVELS, W, H, loadLevel, step, render } from './marble.js'
+import { LEVELS, THEMES, W, H, loadLevel, step, render, starsFor } from './marble.js'
 import { sfx } from './audio.js'
 import { loadBest, saveBest } from './roster.js'
 import { useHid, useKeys, fitCanvas, INK, btn, bigBtn, overlay, panel, topBar } from './common.js'
 
 const BEST_KEY = 'carnival-maze-best'
+const STARS_KEY = 'carnival-maze-stars'
 const KEY_TILT = 0.3
 const MAX_TILT = 0.6
 
@@ -14,10 +15,11 @@ export default function MarbleMaze({ onExit }) {
   const canvasRef = useRef(null)
   const usingJoyCon = !!(pads.L || pads.R)
   const [level, setLevel] = useState(0)
-  const [phase, setPhase] = useState(usingJoyCon ? 'level' : 'play')   // level | forward | play | won
+  const [phase, setPhase] = useState(usingJoyCon ? 'level' : 'play')   // level | forward | play | won | levels
   const [hud, setHud] = useState({ t: 0, falls: 0, gems: 0, total: 0 })
   const [result, setResult] = useState(null)
   const [best, setBest] = useState(() => loadBest(BEST_KEY))
+  const [stars, setStars] = useState(() => loadBest(STARS_KEY))
   const [joySide, setJoySide] = useState(null)
 
   const motion = useRef({ L: createMotion(), R: createMotion() })
@@ -35,7 +37,7 @@ export default function MarbleMaze({ onExit }) {
     game.current = loadLevel(i)
     setLevel(i)
     setResult(null)
-    if (phaseRef.current === 'won') go('play')
+    if (phaseRef.current === 'won' || phaseRef.current === 'levels') go('play')
   }
   const nextLevel = () => goLevel(level + 1)
 
@@ -107,9 +109,16 @@ export default function MarbleMaze({ onExit }) {
       tx = Math.max(-MAX_TILT, Math.min(MAX_TILT, tx))
       ty = Math.max(-MAX_TILT, Math.min(MAX_TILT, ty))
 
+      if (L && phaseRef.current === 'won') step(L, 0, 0, dt)   // confetti keeps flying
       if (L && phaseRef.current === 'play') {
         for (const e of step(L, tx, ty, dt)) {
-          if (e.type === 'wall' && now - lastHit > 60) {
+          if (e.type === 'count') {
+            sfx.tick()
+            if (side) rumblePattern(side, [[300, 600, 0.35, 20]])
+          } else if (e.type === 'go') {
+            sfx.ready()
+            if (side) rumblePattern(side, [[200, 400, 0.7, 70]])
+          } else if (e.type === 'wall' && now - lastHit > 60) {
             lastHit = now
             sfx.clack(e.force)
             if (side) rumblePattern(side, [[90, 180, 0.3 + 0.7 * e.force, 30]])
@@ -126,7 +135,10 @@ export default function MarbleMaze({ onExit }) {
             const prev = loadBest(BEST_KEY)
             const record = !prev[L.index] || ms < prev[L.index]
             if (record) { prev[L.index] = ms; saveBest(BEST_KEY, prev); setBest(prev) }
-            setResult({ ms, falls: L.falls, gems: L.gems.filter((g) => g.got).length, total: L.gems.length, record })
+            const earned = starsFor(L)
+            const starMap = loadBest(STARS_KEY)
+            if (earned > (starMap[L.index] ?? 0)) { starMap[L.index] = earned; saveBest(STARS_KEY, starMap); setStars(starMap) }
+            setResult({ ms, falls: L.falls, gems: L.gems.filter((g) => g.got).length, total: L.gems.length, record, stars: earned })
             go('won')
           }
         }
@@ -162,14 +174,17 @@ export default function MarbleMaze({ onExit }) {
   }, [])
 
   const lv = LEVELS[level]
+  const theme = THEMES[lv.theme]
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#2a1a0c', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 48, userSelect: 'none' }}>
+    <div style={{ position: 'fixed', inset: 0, background: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 48, userSelect: 'none' }}>
       <canvas ref={canvasRef} style={{ display: 'block' }} />
       <div style={topBar}>
         <button onClick={onExit} style={btn}>← Carnival</button>
+        <span style={{ fontSize: 18, letterSpacing: 1, textShadow: '2px 2px 0 #0006' }}>🎱 MARBLE MAZE</span>
         <button onClick={() => goLevel(level - 1)} style={btn}>◀</button>
-        <span>{level + 1}/{LEVELS.length} · {lv.name}</span>
+        <span>{theme.emoji} {level + 1}/{LEVELS.length} · {lv.name}</span>
         <button onClick={nextLevel} style={btn}>▶</button>
+        <button onClick={() => go('levels')} style={btn}>🗺 Levels</button>
         <span style={{ marginLeft: 'auto' }}>⏱ {hud.t.toFixed(1)}s</span>
         <span>🕳 {hud.falls}</span>
         <span>💎 {hud.gems}/{hud.total}</span>
@@ -196,14 +211,39 @@ export default function MarbleMaze({ onExit }) {
           </div>
         </div>
       )}
+      {phase === 'levels' && (
+        <div style={overlay}>
+          <div style={{ ...panel, width: 'min(760px, 100%)', maxWidth: 'none', maxHeight: '100%', overflowY: 'auto' }}>
+            <h2 style={{ marginTop: 0 }}>🗺 Pick a world</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+              {LEVELS.map((l, i) => {
+                const t = THEMES[l.theme]
+                return (
+                  <button key={l.name} onClick={() => goLevel(i)} style={{
+                    background: t.bg, color: '#fff', border: `3px solid ${INK}`, borderRadius: 16, padding: 12, cursor: 'pointer',
+                    textAlign: 'left', fontFamily: 'inherit', boxShadow: `0 4px 0 ${INK}`,
+                  }}>
+                    <div style={{ fontSize: 30 }}>{t.emoji}</div>
+                    <div style={{ fontWeight: 900, fontSize: 17, textShadow: '1px 1px 0 #0008' }}>{i + 1}. {l.name}</div>
+                    <div style={{ fontSize: 12, opacity: 0.9 }}>{t.name}</div>
+                    <div style={{ marginTop: 4 }}>{'⭐'.repeat(stars[i] ?? 0)}<span style={{ opacity: 0.3 }}>{'⭐'.repeat(3 - (stars[i] ?? 0))}</span></div>
+                    {best[i] != null && <div style={{ fontSize: 12 }}>🏆 {(best[i] / 1000).toFixed(1)} s</div>}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       {phase === 'won' && result && (
         <div style={overlay}>
           <div style={panel}>
-            <div style={{ fontSize: 48 }}>🏁</div>
-            <h2 style={{ margin: '4px 0' }}>{lv.name}: done!</h2>
+            <div style={{ fontSize: 46, letterSpacing: 4 }}>{'⭐'.repeat(result.stars)}<span style={{ opacity: 0.25 }}>{'⭐'.repeat(3 - result.stars)}</span></div>
+            <h2 style={{ margin: '4px 0' }}>{theme.emoji} {lv.name}: cleared!</h2>
             <div style={{ fontSize: 34, fontWeight: 900 }}>{(result.ms / 1000).toFixed(1)} s</div>
             {result.record && <div style={{ color: '#15803d', fontWeight: 900 }}>🏆 New best time!</div>}
-            <p>🕳 {result.falls} fall{result.falls === 1 ? '' : 's'} · 💎 {result.gems}/{result.total} gems</p>
+            <p style={{ marginBottom: 4 }}>🕳 {result.falls} fall{result.falls === 1 ? '' : 's'} · 💎 {result.gems}/{result.total} gems</p>
+            <p style={{ fontSize: 13, marginTop: 0, opacity: 0.75 }}>{result.stars < 3 ? 'Every gem and no falls earns ⭐⭐⭐' : 'Perfect run!'}</p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
               <button onClick={nextLevel} style={bigBtn}>Next maze ▶</button>
               <button onClick={() => goLevel(level)} style={{ ...btn, fontSize: 16 }}>Again</button>

@@ -21,7 +21,7 @@ const minus = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
 export function createMotion() {
   return {
     grav: null,          // fast-smoothed accelerometer (g): what tilt reads
-    up: null,            // slow-smoothed accelerometer: world "up" in the controller's frame
+    up: null,            // world "up" in the controller's frame: gyro-tracked, gravity-corrected
     bias: [0, 0, 0],     // gyro offset, deg/s
     stillMs: 0,
     w: [0, 0, 0],        // bias-corrected gyro, deg/s
@@ -29,14 +29,18 @@ export function createMotion() {
 }
 
 export function feedMotion(m, a, w) {
-  if (!m.grav) { m.grav = [...a]; m.up = [...a] }
-  const kFast = DT / 0.06
-  const kSlow = DT / 0.4
-  for (let i = 0; i < 3; i++) {
-    m.grav[i] += (a[i] - m.grav[i]) * kFast
-    m.up[i] += (a[i] - m.up[i]) * kSlow
-  }
+  if (!m.grav) { m.grav = [...a]; m.up = norm(a) }
   const raw = minus(w, m.bias)
+  const kFast = DT / 0.06
+  for (let i = 0; i < 3; i++) m.grav[i] += (a[i] - m.grav[i]) * kFast
+  // "Up" turns with the controller at once (a fixed world direction seen from a turning
+  // body moves as -w × up), and leans slowly toward the accelerometer to cancel drift.
+  // Smoothing the accelerometer alone lags a fast swing by most of a second.
+  const wr = raw.map((v) => (v * Math.PI) / 180)
+  const turn = cross(wr, m.up)
+  const kGrav = DT / 0.5
+  const g = norm(a)
+  m.up = norm(m.up.map((v, i) => v - turn[i] * DT + (g[i] - v) * kGrav))
   // Still: about 1 g of pure gravity and barely turning. After a moment of that,
   // creep the bias toward the reading, so the pointer stops drifting on its own.
   const still = Math.abs(Math.hypot(...a) - 1) < 0.06 && Math.hypot(...raw) < 6
@@ -96,25 +100,37 @@ export function learnPointer(p, m, step) {
   return false
 }
 
-export function centerPointer(p) {
-  p.x = 0.5
-  p.y = 0.5
+// How far above the horizon the wand points, in degrees: absolute, so it never drifts.
+export function elevation(p, m) {
+  if (!p.aim || !m.up) return 0
+  return (Math.asin(Math.max(-1, Math.min(1, dot(p.aim, m.up)))) * 180) / Math.PI
+}
+
+// Re-centres on wherever the wand points now. Pass the motion tracker so the screen's
+// middle is remembered as this height too.
+export function centerPointer(p, m) {
+  pointAt(p, m, 0.5, 0.5)
+}
+
+// Re-centres so wherever the wand points now reads as (x, y) on screen: used when a
+// player aims at an on-screen mark and pulls the trigger. aspect = width / height.
+export function pointAt(p, m, x, y, aspect = 16 / 9) {
+  p.x = x
+  p.y = y
+  if (m) p.elev0 = elevation(p, m) - (0.5 - y) * (p.fov / aspect)
 }
 
 // Moves the pointer by one IMU frame. aspect = screen width / height.
+//
+// Left/right is the gyro alone (nothing measures heading), so it drifts slowly and
+// pins at the screen edges, which doubles as a way to recentre. Up/down is the
+// absolute elevation, so it never drifts: point at the floor and back, and the
+// pointer comes back to the same height.
 export function stepPointer(p, m, aspect) {
   if (!p.aim) return
-  const up = norm(m.up)
-  let yawRate = dot(m.w, up)
-  // How fast the aim is climbing: its elevation is aim·up, and up turns as -w × up in
-  // the controller's frame, so d(elevation)/dt = w · (aim × up). Raising is positive by
-  // construction, for any controller and either hand.
-  let pitchRate = dot(m.w, norm(cross(p.aim, up)))
+  let yawRate = dot(m.w, m.up)
   if (Math.abs(yawRate) < 1.2) yawRate = 0      // tiny deadzone keeps a resting hand still
-  if (Math.abs(pitchRate) < 1.2) pitchRate = 0
   p.x += (yawRate * p.yawDir * DT) / p.fov
-  p.y -= (pitchRate * DT) / (p.fov / aspect)
-  // pinning at the edges doubles as recentring: push past the edge and come back
   p.x = Math.min(1, Math.max(0, p.x))
-  p.y = Math.min(1, Math.max(0, p.y))
+  p.y = Math.min(1, Math.max(0, 0.5 - (elevation(p, m) - (p.elev0 ?? 0)) / (p.fov / aspect)))
 }

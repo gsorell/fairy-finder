@@ -102,6 +102,25 @@ export const sfx = {
   win() {
     ;[784, 988, 1175, 1568].forEach((f, i) => tone({ freq: f, type: 'triangle', dur: i === 3 ? 0.6 : 0.15, vol: 0.18, delay: i * 0.12 }))
   },
+  shot() {
+    noise({ dur: 0.08, vol: 0.5, lp: 5000, hp: 400 })
+    tone({ freq: 600, freqEnd: 180, type: 'square', dur: 0.08, vol: 0.08 })
+  },
+  clonk() {
+    tone({ freq: 520, freqEnd: 300, type: 'triangle', dur: 0.12, vol: 0.25 })
+    noise({ dur: 0.05, vol: 0.3, lp: 2500, hp: 300 })
+  },
+  quack() {
+    tone({ freq: 700, freqEnd: 420, type: 'sawtooth', dur: 0.14, vol: 0.1 })
+    tone({ freq: 650, freqEnd: 380, type: 'sawtooth', dur: 0.12, vol: 0.08, delay: 0.12 })
+  },
+  oops() {
+    tone({ freq: 500, freqEnd: 260, type: 'sine', dur: 0.25, vol: 0.18 })
+    tone({ freq: 260, freqEnd: 180, type: 'sine', dur: 0.3, vol: 0.14, delay: 0.2 })
+  },
+  miss() {
+    tone({ freq: 300, freqEnd: 240, type: 'sine', dur: 0.06, vol: 0.06 })
+  },
   ding() {
     tone({ freq: 1568, type: 'sine', dur: 0.6, vol: 0.2 })
     tone({ freq: 1568 * 2.76, type: 'sine', dur: 0.3, vol: 0.04 })

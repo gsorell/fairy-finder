@@ -67,7 +67,6 @@ export default function SkySketch({ onExit }) {
     pen.current.timedOut = false
     setLeft(DRAW_MS)
     sfx.ready()
-    if (wand.current) centerPointer(pointer.current)
   }
 
   function finishTurn(who) {
@@ -123,7 +122,7 @@ export default function SkySketch({ onExit }) {
     }
     if (ev.side !== wand.current) return
     if (ph === 'wand' && ws === 'center' && ev.name === 'trigger') {
-      centerPointer(pointer.current)
+      centerPointer(pointer.current, motion.current[wand.current])
       sfx.goal()
       rumblePattern(ev.side, [[200, 400, 0.6, 50]])
       startTurn(0)
@@ -136,7 +135,7 @@ export default function SkySketch({ onExit }) {
       else if (ev.name === 'west') undo()
       else if (ev.name === 'south') clear()
       else if (ev.name === 'east') { stopPen(); go('guessed') }
-      else if (ev.name === 'bumper' || ev.name === 'stick') { centerPointer(pointer.current); sfx.click() }
+      else if (ev.name === 'bumper' || ev.name === 'stick') { centerPointer(pointer.current, motion.current[wand.current]); sfx.click() }
     }
   })
 
