@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { pads, rumbleHum, rumblePattern, rumbleStop, isHeld } from '../joycon/hid.js'
-import { createMotion, feedMotion, isStill, createPointer, learnPointer, centerPointer, stepPointer } from '../joycon/motion.js'
+import { createMotion, feedMotion, createPointer, learnPointer, centerPointer, stepPointer } from '../joycon/motion.js'
 import { WORDS, shuffled } from './words.js'
 import { loadRoster } from './roster.js'
 import { sfx, say, hush } from './audio.js'
@@ -20,7 +20,7 @@ export default function SkySketch({ onExit }) {
   const [players, setPlayers] = useState(() => roster.slice(0, Math.max(2, Math.min(4, roster.length))).map((p) => p.id))
   const [rounds, setRounds] = useState(1)
   const [phase, setPhase] = useState('setup')   // setup | wand | peek | draw | guessed | reveal | final
-  const [wandStep, setWandStep] = useState('pick')   // pick | still | raise | turn | center
+  const [wandStep, setWandStep] = useState('pick')   // pick | floor | turn | center
   const [turn, setTurn] = useState(0)
   const [scores, setScores] = useState({})
   const [word, setWord] = useState('')
@@ -101,8 +101,7 @@ export default function SkySketch({ onExit }) {
       const { phase: ph, wandStep: ws } = live.current
       if (ev.side !== wand.current) return
       if (ph === 'wand') {
-        if (ws === 'still' && isStill(m, 900)) { sfx.ready(); wandTo('raise') }
-        else if (ws === 'raise' && learnPointer(pointer.current, m, 'raise')) { sfx.ready(); wandTo('turn') }
+        if (ws === 'floor' && learnPointer(pointer.current, m, 'floor')) { sfx.ready(); wandTo('turn') }
         else if (ws === 'turn' && learnPointer(pointer.current, m, 'turn')) { sfx.ready(); wandTo('center') }
       } else {
         stepPointer(pointer.current, m, W / H)
@@ -119,7 +118,7 @@ export default function SkySketch({ onExit }) {
     if (ph === 'wand' && ws === 'pick' && ev.name === 'trigger') {
       pickWand(ev.side)
       sfx.click()
-      wandTo('still')
+      wandTo('floor')
       return
     }
     if (ev.side !== wand.current) return
@@ -322,9 +321,8 @@ export default function SkySketch({ onExit }) {
             <h2 style={{ margin: '4px 0' }}>Wake up the magic wand</h2>
             {!joy && <p>No Joy-Con connected. Connect one from the Carnival menu, or use the mouse.</p>}
             {wandStep === 'pick' && <p>Pick up the Joy-Con you'll draw with and <b>pull its trigger</b> (ZL or ZR).</p>}
-            {wandStep === 'still' && <p>Hold it <b>perfectly still</b> for a second…</p>}
-            {wandStep === 'raise' && <p>Point it at the <b>floor</b>, then slowly raise it to point at the <b>screen</b>.</p>}
-            {wandStep === 'turn' && <p>Now turn and point it at the <b>right</b> side of the room ➡️</p>}
+            {wandStep === 'floor' && <p>Point it straight at the <b>floor</b> and hold it <b>perfectly still</b> for a second…</p>}
+            {wandStep === 'turn' && <p>Now raise it to point at the <b>screen</b>, then turn and point at the <b>right</b> side of the room ➡️</p>}
             {wandStep === 'center' && <p>Point it at the <b>middle of the screen</b> and pull the trigger.</p>}
             <WandSteps step={wandStep} />
             <button onClick={() => { pickWand(null); startTurn(0) }} style={{ ...btn, marginTop: 10 }}>Use the mouse instead</button>
@@ -404,7 +402,7 @@ export default function SkySketch({ onExit }) {
 }
 
 function WandSteps({ step }) {
-  const steps = ['pick', 'still', 'raise', 'turn', 'center']
+  const steps = ['pick', 'floor', 'turn', 'center']
   const at = steps.indexOf(step)
   return (
     <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 6 }}>

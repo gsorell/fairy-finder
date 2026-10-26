@@ -70,20 +70,21 @@ export function tilt(m, cal) {
 
 // ---------- air pointer ----------
 export function createPointer() {
-  return { x: 0.5, y: 0.5, pitchAxis: null, yawDir: 1, fov: 42, learn: null }
+  return { x: 0.5, y: 0.5, aim: null, yawDir: 1, fov: 42, learn: null }
 }
 
-// Calibration, step by step: 'raise' learns the up/down axis from pointing at the floor
-// then up at the screen; 'turn' learns which way is right. Returns true when a step is done.
+// Calibration, step by step: 'floor' learns which way the wand points (whatever faces
+// down while it is held still at the floor); 'turn' learns which way is right.
+// Returns true when a step is done.
+//
+// Up/down is not learned from a motion: an earlier version took the first big swing
+// as "raise", and a player who lowered the wand to the floor first got it backwards.
 export function learnPointer(p, m, step) {
-  if (!p.learn || p.learn.step !== step) p.learn = { step, sum: [0, 0, 0], yaw: 0 }
+  if (!p.learn || p.learn.step !== step) p.learn = { step, yaw: 0 }
   const L = p.learn
-  if (step === 'raise') {
-    if (Math.hypot(...m.w) < 25) return false
-    for (let i = 0; i < 3; i++) L.sum[i] += m.w[i] * DT
-    if (Math.hypot(...L.sum) < 50) return false
-    const up = norm(m.up)
-    p.pitchAxis = norm(minus(L.sum, along(L.sum, up)))   // keep it horizontal
+  if (step === 'floor') {
+    if (!isStill(m, 1000)) return false   // long enough to learn the gyro bias too
+    p.aim = norm(m.up).map((v) => -v)
     return true
   }
   if (step === 'turn') {
@@ -102,10 +103,13 @@ export function centerPointer(p) {
 
 // Moves the pointer by one IMU frame. aspect = screen width / height.
 export function stepPointer(p, m, aspect) {
-  if (!p.pitchAxis) return
+  if (!p.aim) return
   const up = norm(m.up)
   let yawRate = dot(m.w, up)
-  let pitchRate = dot(m.w, p.pitchAxis)
+  // How fast the aim is climbing: its elevation is aim·up, and up turns as -w × up in
+  // the controller's frame, so d(elevation)/dt = w · (aim × up). Raising is positive by
+  // construction, for any controller and either hand.
+  let pitchRate = dot(m.w, norm(cross(p.aim, up)))
   if (Math.abs(yawRate) < 1.2) yawRate = 0      // tiny deadzone keeps a resting hand still
   if (Math.abs(pitchRate) < 1.2) pitchRate = 0
   p.x += (yawRate * p.yawDir * DT) / p.fov
