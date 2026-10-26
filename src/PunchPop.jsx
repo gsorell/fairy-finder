@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  hidSupported, connectJoyCon, watchJoyCons, onJoyCon, padStatus, buzz, simulateStrike, tuning, saveTuning,
+  hidSupported, connectJoyCon, watchJoyCons, onJoyCon, padStatus, buzz, simulateStrike, tuning, saveTuning, startStrikes,
 } from './punchPop/joycon.js'
 import { sfx, unlockAudio, speak, hush } from './punchPop/audio.js'
 import { W, H, LEVELS, createBalloonGame, update, hit, render } from './punchPop/balloonGame.js'
@@ -49,6 +49,7 @@ export default function PunchPop({ onBack }) {
   const player = players.find((p) => p.id === currentId) ?? players[0]
 
   useEffect(() => { watchJoyCons() }, [])
+  useEffect(() => startStrikes(), [])   // punch detection only while Punch Pop is open
   useEffect(() => { tuning.speedThr = player.power }, [player.power])
   useEffect(() => { saveJSON(PLAYERS_KEY, players) }, [players])
   useEffect(() => { saveJSON(SCORES_KEY, scores) }, [scores])

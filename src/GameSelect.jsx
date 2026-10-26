@@ -342,6 +342,45 @@ export default function GameSelect({ onSelect }) {
             Punch →
           </div>
         </button>
+
+        {/* Joy-Con Carnival card */}
+        <button
+          onClick={() => onSelect("carnival")}
+          className="group relative flex flex-col items-center gap-4 rounded-2xl px-10 py-9 cursor-pointer transition-all duration-200"
+          style={{
+            background: "linear-gradient(135deg, #ff5a5f 0%, #a06bff 100%)",
+            border: "2px solid #fff4dc55",
+            boxShadow: "0 4px 32px #ff5a5f20",
+            outline: "none",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 0 3px #fff4dc, 0 4px 40px #ff5a5f60")}
+          onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 4px 32px #ff5a5f20")}
+        >
+          {/* Mini game preview — a striped tent with the three booths */}
+          <div className="flex items-end rounded-xl overflow-hidden"
+            style={{ width: 200, height: 128, background: "repeating-linear-gradient(90deg, #fff4dc 0 20px, #ffd0d0 20px 40px)", position: "relative" }}>
+            <svg style={{ position: "absolute", inset: 0 }} width="200" height="128">
+              <path d="M30,52 L100,14 L170,52 Z" fill="#ff5a5f" />
+              <path d="M30,52 L100,14 L100,52 Z" fill="#e0434a" />
+              <rect x="40" y="52" width="120" height="6" fill="#2a1a3e" />
+              <line x1="100" y1="14" x2="100" y2="4" stroke="#2a1a3e" strokeWidth="2" />
+              <path d="M100,4 L112,8 L100,12 Z" fill="#ffd23f" />
+            </svg>
+            <div style={{ position: "absolute", left: 22, bottom: 14, fontSize: 26, lineHeight: 1 }}>🎱</div>
+            <div style={{ position: "absolute", left: 86, bottom: 14, fontSize: 26, lineHeight: 1 }}>✏️</div>
+            <div style={{ position: "absolute", left: 150, bottom: 14, fontSize: 26, lineHeight: 1 }}>🤠</div>
+          </div>
+
+          <div className="text-center">
+            <div className="text-2xl font-bold" style={{ color: "#fff4dc" }}>Joy-Con Carnival</div>
+            <div className="text-sm mt-1" style={{ color: "#ffd23f" }}>Tilt maze • air drawing • quick draw</div>
+          </div>
+
+          <div className="text-xs px-4 py-1.5 rounded-full font-semibold transition-all"
+            style={{ background: "#ffd23f", color: "#2a1a3e" }}>
+            Step right up →
+          </div>
+        </button>
       </div>
 
       <p className="mt-12 text-sm" style={{ color: "#334155" }}>
