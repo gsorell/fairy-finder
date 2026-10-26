@@ -5,6 +5,7 @@ import {
 import { sfx, unlockAudio, speak, hush } from './punchPop/audio.js'
 import { W, H, LEVELS, createBalloonGame, update, hit, render } from './punchPop/balloonGame.js'
 import { buildRound, resolveHands, scoreCall, ROUND_CALLS } from './punchPop/coachCalls.js'
+import PunchGraph, { GraphLegend } from './punchPop/PunchGraph.jsx'
 
 const PLAYERS_KEY = 'punch-pop-players'
 const SCORES_KEY = 'punch-pop-scores'
@@ -153,6 +154,21 @@ function Menu({ players, setPlayers, player, setCurrentId, scores, simon, setSim
           <Controllers />
 
           <section style={{ ...card, gridColumn: '1 / -1' }}>
+            <h2 style={h2}>Punch meter · {player.emoji} {player.name}</h2>
+            <PunchGraph height={170} />
+            <GraphLegend />
+            <label style={{ ...row, marginTop: 10 }}>Punch power
+              <input type="range" min="1" max="6" step="0.1" value={player.power}
+                onChange={(e) => updatePlayer({ power: +e.target.value })} style={{ flex: 1 }} />
+              <b style={{ width: 36, textAlign: 'right' }}>{player.power.toFixed(1)}</b>
+            </label>
+            <p style={{ fontSize: 13, color: '#475569', margin: '4px 0 0' }}>
+              Throw a few real punches and a few lazy ones. Slide the yellow line just under the real ones.
+              Every dot above it is a buzz.
+            </p>
+          </section>
+
+          <section style={{ ...card, gridColumn: '1 / -1' }}>
             <h2 style={h2}>Pick a game</h2>
             <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
               <button onClick={() => onPlay('balloon')} style={{ ...modeBtn, background: 'linear-gradient(135deg, #3bb4ff, #a06bff)' }}>
@@ -185,11 +201,6 @@ function Menu({ players, setPlayers, player, setCurrentId, scores, simon, setSim
 }
 
 function PlayerEditor({ player, update, onDone, onRemove }) {
-  const [last, setLast] = useState({ L: null, R: null })
-  useEffect(() => onJoyCon((ev) => {
-    if (ev.type === 'peak') setLast((l) => ({ ...l, [ev.side]: ev.speed }))
-  }), [])
-
   return (
     <div style={{ marginTop: 12, display: 'grid', gap: 10 }}>
       <label style={row}>Name
@@ -214,17 +225,7 @@ function PlayerEditor({ player, update, onDone, onRemove }) {
           <option value="southpaw">Southpaw (right foot forward)</option>
         </select>
       </label>
-      <label style={row}>Punch power
-        <input type="range" min="1" max="6" step="0.1" value={player.power}
-          onChange={(e) => update({ power: +e.target.value })} style={{ flex: 1 }} />
-        <b style={{ width: 36, textAlign: 'right' }}>{player.power.toFixed(1)}</b>
-      </label>
-      <div style={{ fontSize: 13, color: '#475569' }}>
-        How hard a punch has to be to count. Throw a few: your last punches were
-        {' '}<b style={{ color: BLUE }}>L {last.L?.toFixed(1) ?? '–'}</b>
-        {' '}<b style={{ color: RED }}>R {last.R?.toFixed(1) ?? '–'}</b>.
-        {' '}Set it a little under your real punches.
-      </div>
+      <div style={{ fontSize: 13, color: '#475569' }}>Set punch power with the punch meter below.</div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={onDone} style={{ ...chipBtn, background: INK, color: '#fff' }}>Done</button>
         {onRemove && <button onClick={onRemove} style={chipBtn}>Remove player</button>}
@@ -340,6 +341,9 @@ function FeelSettings() {
       <label style={{ ...row, justifyContent: 'flex-start' }}>
         <input type="checkbox" checked={tuning.buzz} onChange={(e) => set({ buzz: e.target.checked })} /> Buzz on every punch
       </label>
+      <label style={{ ...row, justifyContent: 'flex-start' }}>
+        <input type="checkbox" checked={tuning.graph} onChange={(e) => set({ graph: e.target.checked })} /> Show the punch graph during games
+      </label>
       <p style={{ fontSize: 12, color: '#475569', margin: 0 }}>If the buzz lands after your punch, raise "buzz early". If soft taps buzz, lower it.</p>
     </section>
   )
@@ -441,6 +445,12 @@ function BalloonScreen({ player, onDone, onQuit }) {
       <div style={{ position: 'absolute', bottom: 8, left: 0, right: 0, textAlign: 'center', color: '#cbd5e1', fontSize: 12, pointerEvents: 'none' }}>
         {player.emoji} {player.name} · {LEVELS[player.level]?.label}
       </div>
+      {tuning.graph && (
+        // bottom centre, between the two lanes' gloves
+        <div style={{ position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)', width: 'min(300px, 28vw)', pointerEvents: 'none' }}>
+          <PunchGraph height={90} compact />
+        </div>
+      )}
     </div>
   )
 }
@@ -598,6 +608,11 @@ function CoachScreen({ player, simon, onDone, onQuit }) {
         })}
       </div>
       <div style={{ marginTop: 14, color: '#475569', fontSize: 13 }}>{player.stance === 'southpaw' ? 'Southpaw: jab is your right' : 'Jab is your left, cross is your right'}</div>
+      {tuning.graph && (
+        <div style={{ width: 'min(640px, 92vw)', marginTop: 16 }}>
+          <PunchGraph height={110} />
+        </div>
+      )}
     </div>
   )
 }

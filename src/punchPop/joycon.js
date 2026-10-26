@@ -29,17 +29,32 @@ export const IMPACTS = {
 }
 
 // speedThr is set per player by the game; the rest persist across sessions.
-export const tuning = { speedThr: 3.0, refractory: 110, leadMs: 50, impact: 'thud', buzz: true }
+export const tuning = { speedThr: 3.0, refractory: 110, leadMs: 50, impact: 'thud', buzz: true, graph: true }
 const TUNING_KEY = 'punch-pop-tuning'
+const SAVED_TUNING = ['refractory', 'leadMs', 'impact', 'buzz', 'graph']
 try {
   const saved = JSON.parse(localStorage.getItem(TUNING_KEY) || '{}')
-  for (const k of ['refractory', 'leadMs', 'impact', 'buzz']) if (k in saved) tuning[k] = saved[k]
+  for (const k of SAVED_TUNING) if (k in saved) tuning[k] = saved[k]
 } catch { /* storage unavailable: defaults */ }
 export function saveTuning() {
   try {
-    const { refractory, leadMs, impact, buzz } = tuning
-    localStorage.setItem(TUNING_KEY, JSON.stringify({ refractory, leadMs, impact, buzz }))
+    localStorage.setItem(TUNING_KEY, JSON.stringify(Object.fromEntries(SAVED_TUNING.map((k) => [k, tuning[k]]))))
   } catch { /* not persisted */ }
+}
+
+// Recent history for the punch graph: speed per hand, plus a mark for every
+// strike (counted) and every pull-back (ignored).
+export const TRACE_MS = 5000
+export const traces = { L: [], R: [] }
+export const marks = []
+function trace(side, t, speed) {
+  const tr = traces[side]
+  tr.push([t, speed])
+  while (tr.length && tr[0][0] < t - TRACE_MS - 500) tr.shift()
+}
+function mark(side, t, ignored = false) {
+  marks.push({ side, t, ignored })
+  while (marks.length && marks[0].t < t - TRACE_MS - 500) marks.shift()
 }
 
 const listeners = new Set()
@@ -209,11 +224,13 @@ function sample(side, t, a) {
   }
   const vel = s.vel
   const speed = Math.hypot(...vel)
+  trace(side, t, speed)
 
   if (s.peak) {
     if (t - s.peak.t0 < 150) s.peak.v = Math.max(s.peak.v, speed)
     else {
       emit({ type: 'peak', side, speed: s.peak.v })
+      s.peak.mark.peak = s.peak.v   // the graph labels the strike with it
       s.peak = null
     }
   }
@@ -236,21 +253,30 @@ function sample(side, t, a) {
     s.top = speed
     const dir = speed > 0.5 ? vel.map((v) => v / speed) : null
     const pullBack = dir && s.dir && t - s.last < RETRACT_MS && dot(dir, s.dir) < RETRACT_DOT
-    if (!pullBack) {
+    if (pullBack) {
+      mark(side, t, true)
+    } else {
       s.last = t
-      s.peak = { t0: t, v: speed }
       if (dir) s.dir = dir
       strike(side, t, speed)
+      s.peak = { t0: t, v: speed, mark: marks[marks.length - 1] }
     }
   }
 }
 
 function strike(side, t, speed) {
+  mark(side, t)
   if (tuning.buzz) buzz(side)
   emit({ type: 'strike', side, t, speed })
 }
 
 // Keyboard and touch stand in for a punch; a connected Joy-Con still buzzes.
+// The graph gets a spike just over the line so a key press reads like a punch.
 export function simulateStrike(side) {
-  strike(side, performance.now(), null)
+  const t = performance.now()
+  const peak = tuning.speedThr * 1.3
+  trace(side, t - 10, 0)
+  trace(side, t, peak)
+  trace(side, t + 10, 0)
+  strike(side, t, null)
 }
