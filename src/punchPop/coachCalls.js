@@ -2,8 +2,7 @@
 // right fists in order. With the Simon twist, only calls that start with
 // "Coach says" count. Punch on a trick call and the coach gets you.
 //
-// Hands are 'lead' / 'rear' (resolved by stance) or 'L' / 'R'. Kicks, knees and
-// elbows count on the arm of that side, because good technique swings it.
+// Punches only. Hands are 'lead' / 'rear' (resolved by stance) or 'L' / 'R'.
 
 export const CALLS = [
   { say: 'jab', hands: ['lead'], level: 1 },
@@ -15,17 +14,17 @@ export const CALLS = [
   { say: 'left right left', hands: ['L', 'R', 'L'], level: 1 },
   { say: 'jab, cross, hook', hands: ['lead', 'rear', 'lead'], level: 2 },
   { say: 'left hook', hands: ['L'], level: 2 },
+  { say: 'right hook', hands: ['R'], level: 2 },
+  { say: 'left uppercut', hands: ['L'], level: 2 },
   { say: 'right uppercut', hands: ['R'], level: 2 },
-  { say: 'right kick', hands: ['R'], level: 2 },
-  { say: 'left kick', hands: ['L'], level: 2 },
-  { say: 'right knee', hands: ['R'], level: 2 },
-  { say: 'one two, right kick', hands: ['lead', 'rear', 'R'], level: 2 },
+  { say: 'hook, cross', hands: ['lead', 'rear'], level: 2 },
+  { say: 'jab, right uppercut', hands: ['lead', 'R'], level: 2 },
   { say: 'cross, hook, cross', hands: ['rear', 'lead', 'rear'], level: 3 },
   { say: 'one one two', hands: ['lead', 'lead', 'rear'], level: 3 },
-  { say: 'left elbow, right elbow', hands: ['L', 'R'], level: 3 },
-  { say: 'jab, cross, left kick', hands: ['lead', 'rear', 'L'], level: 3 },
   { say: 'one two three two', hands: ['lead', 'rear', 'lead', 'rear'], level: 3 },
-  { say: 'double jab, cross, right knee', hands: ['lead', 'lead', 'rear', 'R'], level: 3 },
+  { say: 'double jab, cross, hook', hands: ['lead', 'lead', 'rear', 'lead'], level: 3 },
+  { say: 'jab, cross, left uppercut, cross', hands: ['lead', 'rear', 'L', 'rear'], level: 3 },
+  { say: 'left right left right', hands: ['L', 'R', 'L', 'R'], level: 3 },
 ]
 
 const LEVEL_OF = { easy: 1, normal: 2, hard: 3 }

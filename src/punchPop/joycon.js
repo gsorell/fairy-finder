@@ -102,7 +102,10 @@ class Pad {
     let i = 0
     const next = () => {
       if (i >= steps.length) {
+        // A Joy-Con keeps rumbling until told to stop, so a lost stop packet turns a
+        // short thud into a long buzz. Send it twice.
         this.send(0x10, [this.tick(), ...NEUTRAL])
+        this.stopTimer = setTimeout(() => this.send(0x10, [this.tick(), ...NEUTRAL]), 30)
         return
       }
       const [lowHz, highHz, amp, ms] = steps[i++]
