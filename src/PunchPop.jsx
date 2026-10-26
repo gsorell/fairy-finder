@@ -333,18 +333,15 @@ function FeelSettings() {
           <option value="buzz">Long buzz</option>
         </select>
       </label>
-      <label style={row}>Buzz early by
-        <input type="range" min="0" max="100" step="5" value={tuning.leadMs}
-          onChange={(e) => set({ leadMs: +e.target.value })} style={{ flex: 1 }} />
-        <b style={{ width: 56, textAlign: 'right' }}>{tuning.leadMs} ms</b>
-      </label>
       <label style={{ ...row, justifyContent: 'flex-start' }}>
-        <input type="checkbox" checked={tuning.buzz} onChange={(e) => set({ buzz: e.target.checked })} /> Buzz on every punch
+        <input type="checkbox" checked={tuning.buzz} onChange={(e) => set({ buzz: e.target.checked })} /> Buzz on punches over the line
       </label>
       <label style={{ ...row, justifyContent: 'flex-start' }}>
         <input type="checkbox" checked={tuning.graph} onChange={(e) => set({ graph: e.target.checked })} /> Show the punch graph during games
       </label>
-      <p style={{ fontSize: 12, color: '#475569', margin: 0 }}>If the buzz lands after your punch, raise "buzz early". If soft taps buzz, lower it.</p>
+      <p style={{ fontSize: 12, color: '#475569', margin: 0 }}>
+        You only feel a buzz when a punch crosses the yellow line on the punch meter. If it lands late, lower that player's punch power a little.
+      </p>
     </section>
   )
 }

@@ -18,7 +18,6 @@ const GRAVITY_TAU_S = 1.0   // slow average of raw acceleration = gravity (a pun
 const REARM_DIP = 0.6       // re-arm once speed falls to 60% of the last strike's peak
 const RETRACT_DOT = -0.5    // motion this opposed to the hand's last strike is the pull-back
 const RETRACT_MS = 400      // ...but only shortly after it
-const EARLY_FLOOR = 0.5     // a projected crossing needs real speed at half the threshold
 
 // What a landed strike feels like: short and front-loaded, so it reads as contact
 // at full extension rather than a buzz that runs on through the pull-back.
@@ -29,9 +28,9 @@ export const IMPACTS = {
 }
 
 // speedThr is set per player by the game; the rest persist across sessions.
-export const tuning = { speedThr: 3.0, refractory: 110, leadMs: 50, impact: 'thud', buzz: true, graph: true }
+export const tuning = { speedThr: 3.0, refractory: 110, impact: 'thud', buzz: true, graph: true }
 const TUNING_KEY = 'punch-pop-tuning'
-const SAVED_TUNING = ['refractory', 'leadMs', 'impact', 'buzz', 'graph']
+const SAVED_TUNING = ['refractory', 'impact', 'buzz', 'graph']
 try {
   const saved = JSON.parse(localStorage.getItem(TUNING_KEY) || '{}')
   for (const k of SAVED_TUNING) if (k in saved) tuning[k] = saved[k]
@@ -170,8 +169,7 @@ async function attach(device) {
     console.error(e)
     return
   }
-  pads[side] = pad
-  pad.pattern(IMPACTS.thud)
+  pads[side] = pad   // no hello buzz: the player light going steady confirms the connection
   emit({ type: 'status' })
 }
 
@@ -235,13 +233,11 @@ function sample(side, t, a) {
     }
   }
 
-  // Fire on where speed is heading, not where it is: while the fist is still speeding
-  // up, project it leadMs ahead so the buzz lands at extension after the Bluetooth trip.
+  // Only a punch that really reaches the threshold counts (and buzzes). An earlier
+  // version fired on a projected crossing to buzz sooner, but that buzzed punches
+  // that peaked just under the line. For an earlier buzz, lower the threshold.
   const thr = tuning.speedThr
-  const lead = tuning.leadMs / 1000
-  const projected = Math.hypot(vel[0] + s.lin[0] * lead, vel[1] + s.lin[1] * lead, vel[2] + s.lin[2] * lead)
-  const early = dot(vel, s.lin) > 0 && speed >= thr * EARLY_FLOOR && projected >= thr
-  const over = speed >= thr || early
+  const over = speed >= thr
   const calm = speed < thr * 0.4
 
   if (!s.armed) {
